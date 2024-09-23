@@ -1,7 +1,8 @@
 import os
 from langsmith import traceable
 from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage
-
+from llama_index.core.retrievers import VectorIndexRetriever
+from llama_index.core.query_engine import RetrieverQueryEngine, TransformQueryEngine
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -12,7 +13,7 @@ if os.getenv("USE_PRIVATE_LINKS"):
 else:
     from links import school_links# This file should have your list of URLs and info
 
-from helper import load_pdfs_from_directory, load_school_links
+from helper import load_pdfs_from_directory, load_school_links, clean_and_preprocess_website
 
 
 def load_all_data():
@@ -20,6 +21,8 @@ def load_all_data():
     pdf_docs = load_pdfs_from_directory('private_data')
     # Load URLs from private_link.py
     web_docs = load_school_links(school_links)
+    web_docs = [clean_and_preprocess_website(doc) for doc in web_docs]
+
     # Combine all documents
     combined_docs = pdf_docs + web_docs
     return combined_docs
@@ -57,7 +60,12 @@ def get_query_engine():
         print("Loading existing index...")
         index = load_index()
 
-    return index.as_query_engine()
+    retriever = VectorIndexRetriever(
+        index=index,
+        similarity_top_k=10,
+    )
+    query_engine = RetrieverQueryEngine(retriever=retriever)
+    return query_engine
 
 
 if __name__ == "__main__":
@@ -65,6 +73,7 @@ if __name__ == "__main__":
     
     # Test query
     queries = ["What are the key admissions requirements for Harker School?",
+               "what is the fees?",
                "What are the fees for Harker School?",
                "Who is the admission  in charge for the Harker School?",
                "What is the average class size for Harker School?", 

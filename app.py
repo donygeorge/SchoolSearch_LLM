@@ -32,8 +32,15 @@ async def on_message(message: cl.Message):
     
     print("Chat interface: message received:" + message.content)
     
+    # Prepare context for RAG query
+    conversation_context = "\n".join([
+        f"{msg['role']}: {msg['content']}" 
+        for msg in message_history[-5:] if msg['role'] != 'system'
+    ])
+    rag_query = f"{conversation_context}\nUser: {message.content}"
+    
     # Get context from RAG
-    rag_response = query_engine.query(message.content)
+    rag_response = query_engine.query(rag_query)
     rag_context = str(rag_response)
     print("RAG context: " + rag_context)
     
