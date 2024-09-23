@@ -49,8 +49,7 @@ def load_index():
     return index
 
 
-if __name__ == "__main__":
-    # Create or load the index
+def get_query_engine():
     if not os.path.exists("persisted_data/docstore.json"):
         print("Creating new index...")
         index = create_index()
@@ -58,8 +57,11 @@ if __name__ == "__main__":
         print("Loading existing index...")
         index = load_index()
 
-    # Create a query engine from the index
-    query_engine = index.as_query_engine()
+    return index.as_query_engine()
+
+
+if __name__ == "__main__":
+    query_engine = get_query_engine()
     
     # Test query
     query = "WHat are the key admission dates for Harker School?"

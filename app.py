@@ -7,11 +7,16 @@ from config_llm import config, model_kwargs
 from prompts import BASE_SYSTEM_PROMPT
 from config_app import config_area
 
+from rag_pipeline import get_query_engine
+
 from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize the OpenAI async client
 client = wrap_openai(openai.AsyncClient(api_key=config["api_key"], base_url=config["endpoint_url"]))
+
+# Initialize the query engine
+query_engine = get_query_engine()
 
 @traceable
 @cl.on_message
@@ -26,8 +31,15 @@ async def on_message(message: cl.Message):
         # print("System prompt:" + system_prompt)
     
     print("Chat interface: message received:" + message.content)
-    message_history.append({"role": "user", "content": message.content})
     
+    # Get context from RAG
+    rag_response = query_engine.query(message.content)
+    rag_context = str(rag_response)
+    print("RAG context: " + rag_context)
+    
+    # Append RAG context and user message to message history
+    message_history.append({"role": "user", "content": f"Context: {rag_context}\n\nQuestion: {message.content}"})
+        
     response_message = cl.Message(content="")
     await response_message.send()
 
