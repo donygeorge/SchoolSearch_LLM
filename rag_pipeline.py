@@ -64,6 +64,15 @@ if __name__ == "__main__":
     query_engine = get_query_engine()
     
     # Test query
-    query = "WHat are the key admission dates for Harker School?"
-    response = query_engine.query(query)
-    print(response)
+    queries = ["What are the key admissions requirements for Harker School?",
+               "What are the fees for Harker School?",
+               "Who is the admission  in charge for the Harker School?",
+               "What is the average class size for Harker School?", 
+               "What are the key admission dates for Harker School?",
+               "How large is the class room for Harker School?",
+               "What is the address of the kindergarden for Harker School?"];
+    for query in queries:
+        response = query_engine.query(query)
+        print("Query: " + query)
+        print("Response: " + str(response))
+        print("")
