@@ -5,17 +5,17 @@ This app is designed to assist parents in searching for private schools in their
 ## Features
 
 - **School Information Database**: Retrieve data on private schools (elementary, middle, and high) including tuition, curriculum, student-teacher ratios, extracurriculars, etc.
-- <to be added>
+- WIP
 
 ## Technologies Used
 
 - **Chainlit**: Provides the front-end user interface for querying the app in an interactive manner.
 - **OpenAI GPT-4**: Used for language processing, making personalized recommendations and answering school-related queries.
 - **LangSmith** (Optional): For optimizing and debugging LangChain workflows.
-- <to be added>
+- WIP
 
 ## Installation
-- <to be added>
+- WIP
 
 ## Contributing
 
