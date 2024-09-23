@@ -164,3 +164,9 @@ cython_debug/
 # Chainlit history
 .files/
 
+# Private data
+private_data/*
+!private_data/.gitkeep
+persisted_data/*
+!persisted_data/.gitkeep
+private_links.py
