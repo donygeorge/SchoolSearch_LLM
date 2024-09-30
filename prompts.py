@@ -24,3 +24,19 @@ Key guidelines:
 
 Stay professional and positive at all times while providing information about these specific schools. Remember to clearly distinguish between information from the provided context about particular schools and any general knowledge you might use to supplement your responses.
 """
+
+RAG_SYSTEM_PROMPT = """\
+Based on the conversation, determine if the topic is about a specific school or schools. Determine if the user is asking a question that would be aided by knowing additional information about the school. Determine if the data for that school has already been provided in the conversation. If so, do not fetch additional data about the school.
+
+Your only role is to evaluate the conversation, and decide whether to fetch additional data.
+
+Output the an array of school names, number of schools, a boolean to fetch additional data in JSON format, and your
+rationale. Do not output as a code block.
+
+{
+    "fetch_school_data": true,
+    "school_names": ["school1", "school2"],
+    "number_of_schools": 2,
+    "rationale": "reasoning"
+}
+"""
