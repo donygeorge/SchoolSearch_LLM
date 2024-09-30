@@ -22,6 +22,11 @@ Key guidelines:
 
 10. If there's a discrepancy between the context and your general knowledge, always prioritize the information from the context as it's more up-to-date and specific to the schools in question.
 
+11. For queries about travel distances or times from or to a school, use the provided functions to get accurate information. It's ok to ask for multiple functions in a single request. Ensure all arrival and departure times are in the future. Today's date is {current_date}.
+- Use 'get_travel_time' for general travel times between 2 locations
+- Use 'get_travel_time_based_on_arrival_time' for travel times based on a specific arrival time.
+- Use 'get_travel_time_based_on_departure_time' for travel times based on a specific departure time.
+
 Stay professional and positive at all times while providing information about these specific schools. Remember to clearly distinguish between information from the provided context about particular schools and any general knowledge you might use to supplement your responses.
 """
 
@@ -30,13 +35,104 @@ Based on the conversation, determine if the topic is about a specific school or 
 
 Your only role is to evaluate the conversation, and decide whether to fetch additional data.
 
-Output the an array of school names, number of schools, a boolean to fetch additional data in JSON format, and your
+In JSON format, output an array of specific questions to ask a RAG for additional context that would be needed to answer the user's question (max of 5 if needed, prioritize questions that a general llm may not be able to answer),  an array of school names, number of schools, a boolean indicating whether additional school data is needed from the rag, and your
 rationale. Do not output as a code block.
 
 {
     "fetch_school_data": true,
+    "rag_messages": ["question1 to ask rag", "question2 to ask rag"],
     "school_names": ["school1", "school2"],
     "number_of_schools": 2,
     "rationale": "reasoning"
 }
 """
+
+# OpenAI tools data
+LLM_FUNCTIONS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_travel_time",
+            "description": "Get travel time from an origin to a destination",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "origin": {
+                        "type": "string",
+                        "description": "The starting address or landmark"
+                    },
+                    "destination": {
+                        "type": "string",
+                        "description": "The destination address or landmark"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["driving", "walking", "bicycling", "transit"],
+                        "description": "The mode of transportation (default is driving)"
+                    }
+                },
+                "required": ["origin", "destination"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_travel_time_based_on_arrival_time",
+            "description": "Get travel time from an origin to a destination based on a specific arrival time",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "origin": {
+                        "type": "string",
+                        "description": "The starting address or landmark"
+                    },
+                    "destination": {
+                        "type": "string",
+                        "description": "The destination address or landmark"
+                    },
+                    "arrival_time": {
+                        "type": "string",
+                        "description": "The desired arrival time (e.g., '2023-05-01 09:00:00')"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["driving", "walking", "bicycling", "transit"],
+                        "description": "The mode of transportation (default is driving)"
+                    }
+                },
+                "required": ["origin", "destination", "arrival_time"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_travel_time_based_on_departure_time",
+            "description": "Get travel time from an origin to a destination based on a specific departure time",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "origin": {
+                        "type": "string",
+                        "description": "The starting address or landmark"
+                    },
+                    "destination": {
+                        "type": "string",
+                        "description": "The destination address or landmark"
+                    },
+                    "departure_time": {
+                        "type": "string",
+                        "description": "The desired departure time (e.g., '2023-05-01 09:00:00')"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["driving", "walking", "bicycling", "transit"],
+                        "description": "The mode of transportation (default is driving)"
+                    }
+                },
+                "required": ["origin", "destination", "departure_time"]
+            }
+        }
+    }
+]
