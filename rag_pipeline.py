@@ -1,8 +1,10 @@
 import os
+import json
 from langsmith import traceable
 from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine, TransformQueryEngine
+from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -13,15 +15,15 @@ if os.getenv("USE_PRIVATE_LINKS"):
 else:
     from links import school_links# This file should have your list of URLs and info
 
-from helper import load_pdfs_from_directory, load_school_links, clean_and_preprocess_website
+from helper import load_pdfs_from_directory, load_school_links
 
-
+        
 def load_all_data():
     # Load PDFs
     pdf_docs = load_pdfs_from_directory('private_data')
+    
     # Load URLs from private_link.py
     web_docs = load_school_links(school_links)
-    web_docs = [clean_and_preprocess_website(doc) for doc in web_docs]
 
     # Combine all documents
     combined_docs = pdf_docs + web_docs
