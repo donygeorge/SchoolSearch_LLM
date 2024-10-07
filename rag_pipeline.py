@@ -15,7 +15,8 @@ if os.getenv("USE_PRIVATE_LINKS"):
 else:
     from links import school_links# This file should have your list of URLs and info
 
-from helper import load_pdfs_from_directory, load_school_links
+from helpers.web_helper import load_school_links, load_crawled_links, get_school_links
+from helpers.pdf_helper import load_pdfs_from_directory
 
         
 def load_all_data():
@@ -23,10 +24,14 @@ def load_all_data():
     pdf_docs = load_pdfs_from_directory('private_data')
     
     # Load URLs from private_link.py
-    web_docs = load_school_links(school_links)
+    non_root_links = get_school_links(school_links)
+    web_docs = load_school_links(non_root_links)
+    
+    # Load URLs from crawling root links
+    crawled_docs = load_crawled_links(school_links)
 
     # Combine all documents
-    combined_docs = pdf_docs + web_docs
+    combined_docs = pdf_docs + web_docs + crawled_docs
     return combined_docs
 
 def create_index():
