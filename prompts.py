@@ -35,15 +35,14 @@ Based on the conversation, determine if the topic is about a specific school or 
 
 Your only role is to evaluate the conversation, and decide whether to fetch additional data.
 
-In JSON format, output an array of specific questions to ask a RAG for additional context that would be needed to answer the user's question (max of 5 if needed, prioritize questions that a general llm may not be able to answer),  an array of school names, number of schools, a boolean indicating whether additional school data is needed from the rag, and your
-rationale. Do not output as a code block.
+In JSON format, output an array of specific questions to ask a RAG for additional context that would be needed to answer the user's question (max of 5 if needed, prioritize questions that a general llm may not be able to answer). Always include the user's question as the first item in the rag_messages array, but feel free to modify it to be more suitable for the RAG system if necessary. This could involve making it more specific, breaking it down into multiple questions, or rephrasing it for clarity. Also include an array of school names, number of schools, a boolean indicating whether additional school data is needed from the rag, and your rationale. Do not output as a code block.
 
 {
     "fetch_school_data": true,
-    "rag_messages": ["question1 to ask rag", "question2 to ask rag"],
+    "rag_messages": ["modified user's question", "additional question 1", "additional question 2"],
     "school_names": ["school1", "school2"],
     "number_of_schools": 2,
-    "rationale": "reasoning"
+    "rationale": "reasoning for modifications and additional questions"
 }
 """
 
