@@ -134,6 +134,12 @@ def crawl_links(root_link, max_pages = 100):
     to_visit = [root_link]
     visited = set()
     
+    session = requests.Session()
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Referer': 'https://www.google.com'
+    }
+    
     while len(to_visit) > 0 and len(links) < max_pages:
         url = to_visit.pop(0)
         if url in visited:
@@ -143,7 +149,7 @@ def crawl_links(root_link, max_pages = 100):
 
         try:
             print(f"Scraping {url}")
-            response = requests.get(url, timeout=10)
+            response = session.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
                 
@@ -189,10 +195,16 @@ def load_crawled_links(school_links):
 def is_relevant_to_root_url(url, root_domain):
     """Check if the URL is valid and belongs to the same domain."""
     parsed = urlparse(url)
-    return bool(parsed.netloc) and parsed.netloc.endswith(root_domain)
-
-def is_relevant_page(url):
-    """Check if the page is likely to contain relevant information."""
+    # Check if the URL belongs to the same domain
+    if not (bool(parsed.netloc) and parsed.netloc.endswith(root_domain)):
+        return False
+    
+    # Ignore specific file types
+    ignored_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.mp4', '.avi', '.mov', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']
+    if any(url.lower().endswith(ext) for ext in ignored_extensions):
+        return False
+    
+    # Check if the page is relevant
     relevant_patterns = [
         r'/about', r'/admission', r'/academics', r'/programs',
         r'/faculty', r'/staff', r'/students', r'/parents',
@@ -201,4 +213,9 @@ def is_relevant_page(url):
         r'/curriculum', r'/extracurricular', r'/athletics',
         r'/facilities', r'/campus', r'/transportation', r'/lower'
     ]
-    return any(re.search(pattern, url, re.IGNORECASE) for pattern in relevant_patterns)
+    
+    # If the URL path is empty or just '/', consider it relevant (likely the homepage)
+    if parsed.path in ('', '/'):
+        return True
+    
+    return any(re.search(pattern, parsed.path, re.IGNORECASE) for pattern in relevant_patterns)
