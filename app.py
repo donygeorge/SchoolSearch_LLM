@@ -5,9 +5,9 @@ from datetime import datetime
 from langsmith import traceable
 from langsmith.wrappers import wrap_openai
 
-from config_llm import config, model_kwargs
+from config.config_llm import config, model_kwargs
 from prompts import BASE_SYSTEM_PROMPT, RAG_SYSTEM_PROMPT, LLM_FUNCTIONS
-from config_app import config_area
+from config.config_app import config_area
 
 from rag_pipeline import get_query_engine
 from map_functions import get_travel_time, get_travel_time_based_on_arrival_time, get_travel_time_based_on_departure_time

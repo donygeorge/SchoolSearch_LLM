@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from llama_index.core import Document
 from llama_index.readers.web import SimpleWebPageReader
 from datetime import datetime, timedelta
-from config_app import CACHE_FILE, CACHE_EXPIRY_DAYS
+from config.config_app import CACHE_FILE, CACHE_EXPIRY_DAYS
 import json
 import pdfplumber
 import requests
