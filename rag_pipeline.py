@@ -81,12 +81,15 @@ if __name__ == "__main__":
     # Test query
     queries = ["What are the key admissions requirements for Harker School?",
                "what is the fees?",
-               "What are the fees for Harker School?",
+               "What are the fees for Helios School?",
                "Who is the admission  in charge for the Harker School?",
                "What is the average class size for Harker School?", 
                "What are the key admission dates for Harker School?",
                "How large is the class room for Harker School?",
-               "What is the address of the kindergarden for Harker School?"];
+               "What is the address of the kindergarden for Harker School, Keys School, and Helios School?",
+               "What are the fees for the Keys School?",
+               "What is the average class size for the Keys School?",
+            ];
     for query in queries:
         response = query_engine.query(query)
         print("Query: " + query)
