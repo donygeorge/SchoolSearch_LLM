@@ -6,12 +6,13 @@ from langsmith import traceable
 from langsmith.wrappers import wrap_openai
 
 from config.config_llm import config, model_kwargs
-from prompts import BASE_SYSTEM_PROMPT, RAG_SYSTEM_PROMPT, LLM_FUNCTIONS
+from prompts import BASE_SYSTEM_PROMPT, RAG_SYSTEM_PROMPT, LLM_FUNCTIONS, USER_MEMORY_CHECK_PROMPT
 from config.config_app import config_area
 
 from rag_pipeline import get_query_engine
 from map_functions import get_travel_time, get_travel_time_based_on_arrival_time, get_travel_time_based_on_departure_time
 
+from helpers.memory_helper import get_formatted_memories, save_memories
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -38,7 +39,7 @@ async def query_rag(client, message_history, message):
 
 
 @traceable
-async def check_for_additional_data(client, message_history, message):
+async def check_rag(client, message_history, message):
     rag_check_message_history = message_history.copy()
     rag_prompt_message = {"role": "system", "content": RAG_SYSTEM_PROMPT}
     if rag_check_message_history and rag_check_message_history[0]["role"] == "system":
@@ -75,6 +76,41 @@ async def check_for_additional_data(client, message_history, message):
     return updated_message_history
 
 @traceable
+async def check_memories(message_history, message):
+    memories_message_history = message_history.copy()
+    memories = get_formatted_memories()
+    system_prompt = USER_MEMORY_CHECK_PROMPT.format(current_user_memories=memories)
+
+
+    memories_prompt_message = {"role": "system", "content": system_prompt}
+    if memories_message_history and memories_message_history[0]["role"] == "system":
+        # Replace the existing system message
+        memories_message_history[0] = memories_prompt_message
+    else:
+        # Insert a new system message at the beginning
+        memories_message_history.insert(0, memories_prompt_message)
+
+    # Add the user's message to the message history
+    memories_message_history.append({"role": "user", "content": message})
+
+    response = await client.chat.completions.create(
+        messages=memories_message_history,
+        **model_kwargs)
+    
+    try:
+        response_json = json.loads(response.choices[0].message.content)
+        print("Memory check reponse: " + str(response_json))
+        if response_json.get("update_needed", False):
+            updated_memories = response_json.get("memories", [])
+            print("Updated memories: " + str(updated_memories))
+            save_memories(updated_memories)
+        else:
+            print("No memoryupdate needed")
+    except json.JSONDecodeError as e:
+        print("Memory update error: " + str(e))
+        pass
+
+@traceable
 async def generate_response(client, message_history):
     response_message = cl.Message(content="")
     await response_message.send()
@@ -92,7 +128,7 @@ async def generate_response(client, message_history):
     current_tool_call_index = None
     current_tool_call = None
     
-    print("Message history: " + str(message_history))
+    # print("Message history: " + str(message_history))
     
     async for part in stream:
         delta = part.choices[0].delta
@@ -134,7 +170,8 @@ async def generate_response(client, message_history):
 @cl.on_chat_start
 def on_chat_start():    
     current_date = datetime.now().strftime("%Y-%m-%d")
-    system_prompt = BASE_SYSTEM_PROMPT.format(config_area=config_area, current_date=current_date)
+    memories = get_formatted_memories()
+    system_prompt = BASE_SYSTEM_PROMPT.format(config_area=config_area, current_date=current_date, user_information=memories)
     message_history = [{"role": "system", "content": system_prompt}]
     cl.user_session.set("message_history", message_history)
 
@@ -145,8 +182,11 @@ async def on_message(message: cl.Message):
     message_history = cl.user_session.get("message_history", [])
     print("Chat interface: message received:" + message.content)
     
+    #  Check if we need to update memories
+    await check_memories(message_history, message.content)
+    
     # Check if we need to fetch additional data and q
-    message_history = await check_for_additional_data(client, message_history, message.content)
+    message_history = await check_rag(client, message_history, message.content)
 
     # Add the user's message to the message history
     message_history.append({"role": "user", "content": message.content})

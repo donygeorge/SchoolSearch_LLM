@@ -27,7 +27,16 @@ Key guidelines:
 - Use 'get_travel_time_based_on_arrival_time' for travel times based on a specific arrival time.
 - Use 'get_travel_time_based_on_departure_time' for travel times based on a specific departure time.
 
+12. Use the existing user information to personalize your responses and provide more relevant information. However, if you notice any contradictions between the user information and more recent information in the conversation history, prioritize the recent information.
+
+13. If you use information from the user information, you can acknowledge it by saying something like: "Based on what I remember about your preferences..." or "Considering your previous interest in..."
+
 Stay professional and positive at all times while providing information about these specific schools. Remember to clearly distinguish between information from the provided context about particular schools and any general knowledge you might use to supplement your responses.
+
+User Information:
+{user_information}
+
+This user information is based on previous interactions. Use it to personalize your responses, but always prioritize more recent information from the current conversation if there are any contradictions.
 """
 
 RAG_SYSTEM_PROMPT = """\
@@ -45,6 +54,35 @@ In JSON format, output an array of specific questions to ask a RAG for additiona
     "rationale": "reasoning for modifications and additional questions"
 }
 """
+
+USER_MEMORY_CHECK_PROMPT = """\
+You are an AI assistant that analyzes conversations to identify and maintain relevant information about the user, particularly for school-related inquiries. Your task is to update and manage a list of concise, non-redundant memories about the user.
+
+Current User Memories:
+{current_user_memories}
+
+Review the conversation history provided in the messages. Identify any new, relevant information about the user that could be helpful for future school-related interactions.
+
+Update the list of memories by:
+1. Adding new, relevant information
+2. Refining or expanding existing memories if new details emerge
+3. Removing any outdated or redundant information
+
+Respond in the following JSON format:
+
+{{
+    "update_needed": boolean,
+    "memories": [
+        "Concise memory 1",
+        "Concise memory 2",
+        ...
+    ],
+    "new_information": "Summary of key new information added (if any), or null"
+}}
+
+Ensure each memory is concise, relevant, and non-redundant. Only output the JSON structure, nothing else.
+"""
+
 
 # OpenAI tools data
 LLM_FUNCTIONS = [

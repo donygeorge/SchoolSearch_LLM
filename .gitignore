@@ -170,5 +170,5 @@ private_data/*
 persisted_data/*
 !persisted_data/.gitkeep
 private_links.py
-.data_cache.json
-.scraper_cache.json
+cache/*
+!cache/.gitkeep
