@@ -33,10 +33,10 @@ edit_message = true
 
 # Authorize users to spontaneously upload files with messages
 [features.spontaneous_file_upload]
-    enabled = true
-    accept = ["*/*"]
-    max_files = 20
-    max_size_mb = 500
+    enabled = false
+
+[features.file_upload]
+enabled = false
 
 [features.audio]
     # Threshold for audio recording
@@ -54,10 +54,10 @@ edit_message = true
 
 [UI]
 # Name of the assistant.
-name = "Assistant"
+name = "Bay Area School Assistant"
 
 # Description of the assistant. This is used for HTML tags.
-# description = ""
+# description = "Helps with answering questions about Bay Area Schools, especially around admissions for private schools."
 
 # Large size content are by default collapsed for a cleaner ui
 default_collapse_content = true
@@ -66,7 +66,7 @@ default_collapse_content = true
 cot = "full"
 
 # Link to your github repo. This will add a github button in the UI's header.
-# github = ""
+# github = "https://github.com/donygeorge/SchoolSearch_LLM"
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.
