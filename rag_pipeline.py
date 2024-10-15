@@ -5,6 +5,7 @@ from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_s
 from llama_index.core.retrievers import VectorIndexRetriever, BaseRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine, TransformQueryEngine
 from datetime import datetime, timedelta
+from thefuzz import fuzz
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -61,19 +62,36 @@ def load_index():
     return index
 
 class SchoolAwareRetriever(BaseRetriever):
-    def __init__(self, base_retriever, school_name):
+    def __init__(self, base_retriever, school_name, similarity_threshold=70):
         self.base_retriever = base_retriever
         self.school_name = school_name.lower()
+        self.similarity_threshold = similarity_threshold
 
     def _retrieve(self, query, **kwargs):
         nodes = self.base_retriever.retrieve(query, **kwargs)
         
-        # Prioritize nodes related to the specific school
-        school_nodes = [node for node in nodes if node.metadata.get('school', '').lower() == self.school_name]
-        other_nodes = [node for node in nodes if node.metadata.get('school', '').lower() != self.school_name]
-        
-        # Combine the lists, putting school-specific nodes first
-        return school_nodes + other_nodes
+        if self.school_name:
+            # Calculate similarity scores for all nodes
+            scored_nodes = [
+                (node, fuzz.partial_ratio(self.school_name, node.metadata.get('school', '').lower()))
+                for node in nodes
+            ]
+            
+            # Sort nodes by similarity score in descending order
+            scored_nodes.sort(key=lambda x: x[1], reverse=True)
+            
+            # If we have any matches above the threshold, use the highest score
+            if scored_nodes and scored_nodes[0][1] >= self.similarity_threshold:
+                highest_score = scored_nodes[0][1]
+                school_nodes = [node for node, score in scored_nodes if score == highest_score]
+            else:
+                # If no matches above threshold, return an empty list
+                school_nodes = []
+            
+            return school_nodes
+        else:
+            # If no specific school is set, return all nodes
+            return nodes
 
 def get_query_engine(school_name = None):
     if not os.path.exists("persisted_data/docstore.json"):
