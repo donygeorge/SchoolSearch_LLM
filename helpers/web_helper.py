@@ -1,14 +1,17 @@
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from llama_index.core import Document
-from llama_index.readers.web import SimpleWebPageReader
 from datetime import datetime
 from helpers.cache_helper import load_cache, save_cache, is_cache_valid
 from helpers.cache_helper import load_scraper_cache, save_scraper_cache
 
 import requests
 import re
+import time
+import random
 
 # Load environment variables
 load_dotenv()
@@ -48,19 +51,69 @@ def clean_and_preprocess_website(website_document):
     cleaned_text = clean_and_preprocess_website_text(website_document.text)
     return Document(text=cleaned_text, metadata=website_document.metadata)
 
+def create_session_with_retries():
+    session = requests.Session()
+    retries = Retry(total=3,
+                    backoff_factor=0.1,
+                    status_forcelist=[500, 502, 503, 504])
+    session.mount('http://', HTTPAdapter(max_retries=retries))
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+    return session
 
-def load_document_from_url(loader, url):
-    print(f"Loading web data from:" + url)
+class CustomWebPageReader:
+    def __init__(self):
+        self.session = create_session_with_retries()
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://www.google.com/'
+        }
+
+    def load_data(self, urls):
+        documents = []
+        for url in urls:
+            try:
+                response = self.session.get(url, headers=self.headers, timeout=30)
+                response.raise_for_status()
+                html = response.text
+                
+                # Parse the HTML content
+                soup = BeautifulSoup(html, 'html.parser')
+                
+                # Extract text content
+                text = soup.get_text(separator='\n', strip=True)
+                
+                documents.append(Document(text=text, extra_info={"url": url}))
+            except requests.RequestException as e:
+                print(f"Error fetching {url}: {str(e)}")
+        return documents
+
+def load_document_from_url(loader, url, max_retries=2, retry_count=0):
+    print(f"Loading web data from: {url} (Attempt {retry_count + 1})")
+    
     try:
         docs = loader.load_data(urls=[url])
+        
         if len(docs) == 0:
             print(f"No data found for {url}")
             return None
         elif len(docs) > 1:
             print(f"Loaded {len(docs)} documents from {url} -> i.e more than one document")
+        
         return docs[0]
+    
     except Exception as e:
         print(f"Error loading {url}: {str(e)}")
+        
+        if isinstance(e, requests.exceptions.HTTPError) and e.response.status_code == 403:
+            if retry_count < max_retries:
+                print(f"Received 403 Forbidden. Waiting and retrying... (Attempt {retry_count + 2})")
+                time.sleep(random.uniform(5, 10))  # Wait for 5-10 seconds
+                return load_document_from_url(loader, url, max_retries, retry_count + 1)  # Retry
+            else:
+                print(f"Max retries reached for {url}. Giving up.")
+        
         return None
 
 
@@ -99,7 +152,7 @@ def load_link(link, loader, cache, school_name=None):
 
 def load_school_links(links, school_name = None):
     web_docs = []
-    loader = SimpleWebPageReader()
+    loader = CustomWebPageReader()
     cache = load_cache()
         
     for link in links:
