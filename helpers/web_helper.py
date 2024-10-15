@@ -103,17 +103,22 @@ def load_document_from_url(loader, url, max_retries=2, retry_count=0):
         
         return docs[0]
     
-    except Exception as e:
-        print(f"Error loading {url}: {str(e)}")
-        
-        if isinstance(e, requests.exceptions.HTTPError) and e.response.status_code == 403:
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            print(f"Page not found (404) for {url}")
+            return None
+        elif e.response.status_code == 403:
             if retry_count < max_retries:
                 print(f"Received 403 Forbidden. Waiting and retrying... (Attempt {retry_count + 2})")
                 time.sleep(random.uniform(5, 10))  # Wait for 5-10 seconds
                 return load_document_from_url(loader, url, max_retries, retry_count + 1)  # Retry
             else:
                 print(f"Max retries reached for {url}. Giving up.")
-        
+        else:
+            print(f"HTTP error occurred: {e}")
+        return None
+    except Exception as e:
+        print(f"Error loading {url}: {str(e)}")
         return None
 
 
@@ -126,6 +131,11 @@ def load_link(link, loader, cache, school_name=None):
     else:
         print(f"Loading new website: {link}")
         doc = load_document_from_url(loader, link)
+        
+        if doc is None:
+            print(f"Failed to load document from {link}")
+            return None, cache  # Return None if we couldn't load the document
+        
         # print("doc: " + str(doc))
         doc = clean_and_preprocess_website(doc)
         
@@ -157,8 +167,11 @@ def load_school_links(links, school_name = None):
         
     for link in links:
         doc, cache = load_link(link, loader, cache, school_name)
-        web_docs.append(doc)
-    
+        if doc is not None:
+            web_docs.append(doc)
+        else:
+            print(f"Skipping {link} due to loading failure")
+        
     save_cache(cache)
     return web_docs
 
