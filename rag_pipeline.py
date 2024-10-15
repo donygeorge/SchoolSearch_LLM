@@ -18,6 +18,9 @@ else:
 from helpers.web_helper import load_school_links, load_crawled_links, get_school_links
 from helpers.pdf_helper import load_pdfs_from_directory
 
+def get_schools_with_data():
+    list =  [school["name"] for school in school_links]
+    return "\n".join(f"- {school}" for school in list)
         
 def load_all_data():
     # Load PDFs

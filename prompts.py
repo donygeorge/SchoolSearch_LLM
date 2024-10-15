@@ -40,19 +40,27 @@ This user information is based on previous interactions. Use it to personalize y
 """
 
 RAG_SYSTEM_PROMPT = """\
-Based on the conversation, determine if the topic is about a specific school or schools. Determine if the user is asking a question that would be aided by knowing additional information about the school. Determine if the data for that school has already been provided in the conversation. If so, do not fetch additional data about the school.
+Based on the conversation, determine if the topic is about a specific school or schools. Determine if the user is asking a question that would be aided by knowing additional information about the school.
 
-Your only role is to evaluate the conversation, and decide whether to fetch additional data.
+The schools for which we have additional data are:
+{schools_with_data}
+
+For these schools listed above:
+1. Always consider querying the RAG system for additional information.
+2. However, if previous RAG fetches in the current conversation have already provided the exact information needed to answer the user's current question, you may decide not to fetch again.
+3. If there's any doubt about whether the information is complete or up-to-date, err on the side of fetching from the RAG.
+
+Your role is to evaluate the conversation and decide whether to fetch additional data, keeping in mind the special consideration for the schools listed above.
 
 In JSON format, output an array of specific questions to ask a RAG for additional context that would be needed to answer the user's question (max of 5 if needed, prioritize questions that a general llm may not be able to answer). Always include the user's question as the first item in the rag_messages array, but feel free to modify it to be more suitable for the RAG system if necessary. This could involve making it more specific, breaking it down into multiple questions, or rephrasing it for clarity. Also include an array of school names, number of schools, a boolean indicating whether additional school data is needed from the rag, and your rationale. Do not output as a code block.
 
-{
+{{
     "fetch_school_data": true,
     "rag_messages": ["modified user's question", "additional question 1", "additional question 2"],
     "school_names": ["school1", "school2"],
     "number_of_schools": 2,
     "rationale": "reasoning for modifications and additional questions"
-}
+}}
 """
 
 USER_MEMORY_CHECK_PROMPT = """\

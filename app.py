@@ -10,7 +10,7 @@ from config.config_llm import config, model_kwargs
 from prompts import BASE_SYSTEM_PROMPT, RAG_SYSTEM_PROMPT, LLM_FUNCTIONS, USER_MEMORY_CHECK_PROMPT
 from config.config_app import config_area
 
-from rag_pipeline import get_query_engine
+from rag_pipeline import get_query_engine, get_schools_with_data
 from map_functions import get_travel_time, get_travel_time_based_on_arrival_time, get_travel_time_based_on_departure_time
 
 from helpers.memory_helper import get_formatted_memories, save_memories
@@ -42,7 +42,8 @@ async def query_rag(client, message_history, message):
 @traceable
 async def check_rag(client, message_history, message):
     rag_check_message_history = message_history.copy()
-    rag_prompt_message = {"role": "system", "content": RAG_SYSTEM_PROMPT}
+    rag_prompt = RAG_SYSTEM_PROMPT.format(schools_with_data=get_schools_with_data())
+    rag_prompt_message = {"role": "system", "content": rag_prompt}
     if rag_check_message_history and rag_check_message_history[0]["role"] == "system":
         # Replace the existing system message
         rag_check_message_history[0] = rag_prompt_message
