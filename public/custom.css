@@ -14,12 +14,13 @@
     width: auto !important;
 }
 
+/* System message styling */
 .system-message {
     font-size: 0.75em !important;
     color: var(--text-color) !important;
     font-style: italic !important;
-    padding: 2px 6px !important;
-    margin: 2px 0 !important;
+    padding: 1px 6px !important;
+    margin: 0 !important;
     display: inline-block !important;
     border-left: 2px solid var(--primary-color) !important;
     opacity: 0.8 !important;
@@ -28,6 +29,24 @@
 /* Hide copy button for system messages */
 .MuiStack-root:has(.system-message) + .MuiStack-root .MuiIconButton-root[aria-label="Copy"] {
     display: none !important;
+}
+
+/* Remove space around system message containers */
+.MuiStack-root:has(.system-message) {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Remove space within system message content */
+.MuiStack-root:has(.system-message) .message-content,
+.MuiStack-root:has(.system-message) .markdown-body,
+.MuiStack-root:has(.system-message) .markdown-body p {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
 }
 
 /* Adjust for dark mode */

@@ -201,7 +201,7 @@ async def on_message(message: cl.Message):
     await add_system_tooltip('Querying RAG for additional data...')
     message_history, used_rag = await check_rag(client, message_history, message.content)
     if used_rag:
-        await add_system_tooltip('Found additional data in RAG')
+        await add_system_tooltip('Loading additional data from RAG')
     else:
         await add_system_tooltip('No additional data found in RAG')
 
