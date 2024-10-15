@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from langsmith import traceable
 from langsmith.wrappers import wrap_openai
+from chainlit.step import Step as cl_Step
 
 from config.config_llm import config, model_kwargs
 from prompts import BASE_SYSTEM_PROMPT, RAG_SYSTEM_PROMPT, LLM_FUNCTIONS, USER_MEMORY_CHECK_PROMPT
@@ -57,6 +58,7 @@ async def check_rag(client, message_history, message):
         **model_kwargs)
     
     updated_message_history = message_history.copy()
+    used_rag = False
     try:
         response_json = json.loads(response.choices[0].message.content)
         print("Rag check reponse: " + str(response_json))
@@ -69,11 +71,15 @@ async def check_rag(client, message_history, message):
                 temporary_message_history.append({"role": "system", "Updated question to query:": rag_message})
                 rag_reply = await query_rag(client, temporary_message_history, rag_message)
                 updated_message_history.append({"role": "assistant", "content": f"Context: {rag_reply}\n\nQuestion: {rag_message}"})
-                
+                used_rag = True
     except json.JSONDecodeError:
         pass
     
-    return updated_message_history
+    return updated_message_history, used_rag
+
+async def add_system_tooltip(message):
+    system_message = f'<span class="system-message">{message}</span>'
+    await cl.Message(content=system_message, author="System").send()
 
 @traceable
 async def check_memories(message_history, message):
@@ -104,11 +110,15 @@ async def check_memories(message_history, message):
             updated_memories = response_json.get("memories", [])
             print("Updated memories: " + str(updated_memories))
             save_memories(updated_memories)
+            return True
         else:
-            print("No memoryupdate needed")
+            print("No memory update needed")
     except json.JSONDecodeError as e:
         print("Memory update error: " + str(e))
         pass
+
+    return False
+
 
 @traceable
 async def generate_response(client, message_history):
@@ -183,10 +193,17 @@ async def on_message(message: cl.Message):
     print("Chat interface: message received:" + message.content)
     
     #  Check if we need to update memories
-    await check_memories(message_history, message.content)
-    
+    memory_updated = await check_memories(message_history, message.content)
+    if memory_updated:
+        await add_system_tooltip('Memory updated')
+
     # Check if we need to fetch additional data and q
-    message_history = await check_rag(client, message_history, message.content)
+    await add_system_tooltip('Querying RAG for additional data...')
+    message_history, used_rag = await check_rag(client, message_history, message.content)
+    if used_rag:
+        await add_system_tooltip('Found additional data in RAG')
+    else:
+        await add_system_tooltip('No additional data found in RAG')
 
     # Add the user's message to the message history
     message_history.append({"role": "user", "content": message.content})
@@ -212,15 +229,21 @@ async def on_message(message: cl.Message):
             print("Function name: " + function_name)
             print("Function args: " + str(function_args))
             
-            
+            used_map_function = False
             if function_name == "get_travel_time":
                 result = get_travel_time(**function_args)
+                used_map_function = True
             elif function_name == "get_travel_time_based_on_arrival_time":
-                    result = get_travel_time_based_on_arrival_time(**function_args)
+                result = get_travel_time_based_on_arrival_time(**function_args)
+                used_map_function = True
             elif function_name == "get_travel_time_based_on_departure_time":
                 result = get_travel_time_based_on_departure_time(**function_args)
+                used_map_function = True
             else:
                 result = "Unknown function"
+                
+            if used_map_function:
+                await add_system_tooltip('Made an external API call to get travel time')
 
             system_message = {
                 "role": "system",

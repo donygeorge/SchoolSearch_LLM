@@ -1,4 +1,42 @@
+/* body::after {
+    content: 'Custom CSS loaded5!';
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: red;
+    color: white;
+    padding: 5px;
+    z-index: 9999;
+  } */
+
 .logo {
     height: 100px !important;  /* Adjust this value as needed */
     width: auto !important;
 }
+
+.system-message {
+    font-size: 0.75em !important;
+    color: var(--text-color) !important;
+    font-style: italic !important;
+    padding: 2px 6px !important;
+    margin: 2px 0 !important;
+    display: inline-block !important;
+    border-left: 2px solid var(--primary-color) !important;
+    opacity: 0.8 !important;
+}
+
+/* Hide copy button for system messages */
+.MuiStack-root:has(.system-message) + .MuiStack-root .MuiIconButton-root[aria-label="Copy"] {
+    display: none !important;
+}
+
+/* Adjust for dark mode */
+[data-theme='dark'] .system-message {
+    opacity: 0.7 !important;  /* Slightly more transparent in dark mode */
+}
+
+/* .system-message::before {
+    content: "🔄 ";
+    font-weight: bold;
+    color: #444 !important;
+} */
