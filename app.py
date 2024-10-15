@@ -21,11 +21,8 @@ load_dotenv()
 # Initialize the OpenAI async client
 client = wrap_openai(openai.AsyncClient(api_key=config["api_key"], base_url=config["endpoint_url"]))
 
-# Initialize the query engine
-query_engine = get_query_engine()
-
 @traceable
-async def query_rag(client, message_history, message):
+async def query_rag(client, message_history, message, school):
     conversation_context = "\n".join([
         f"{msg['role']}: {msg['content']}" 
         for msg in message_history[-5:] if msg['role'] != 'system'
@@ -33,6 +30,7 @@ async def query_rag(client, message_history, message):
     rag_query = f"{conversation_context}\nUser: {message}"
     print("RAG query: " + rag_query)
 
+    query_engine = get_query_engine(school)
     rag_response = query_engine.query(rag_query)
     rag_context = str(rag_response)
     
@@ -72,10 +70,12 @@ async def check_rag(client, message_history, message):
             rag_messages = response_json.get("rag_messages", [])
             print("Rag message: " + str(rag_messages))
             rag_replies = []
-            for rag_message in rag_messages:
+            for rag_message_item in rag_messages:
+                rag_message = rag_message_item["question"]
+                school = rag_message_item["school"]
                 temporary_message_history = message_history.copy()
                 temporary_message_history.append({"role": "system", "Updated question to query:": rag_message})
-                rag_reply, rag_sources = await query_rag(client, temporary_message_history, rag_message)
+                rag_reply, rag_sources = await query_rag(client, temporary_message_history, rag_message, school)
                 
                 # Format the sources information
                 sources_info = "\n".join([

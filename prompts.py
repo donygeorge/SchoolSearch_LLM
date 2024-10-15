@@ -69,9 +69,11 @@ In JSON format, output an array of specific questions to ask a RAG for additiona
 
 {{
     "fetch_school_data": true,
-    "rag_messages": ["modified user's question", "additional question 1", "additional question 2"],
-    "school_names": ["school1", "school2"],
-    "number_of_schools": 2,
+    "rag_messages": [
+        {{"question": "modified user's question", "school": "school1"}},
+        {{"question": "additional question 1", "school": "school1"}},
+        {{"question": "additional question 2", "school": "school2"}}
+    ],
     "rationale": "reasoning for modifications and additional questions"
 }}
 """

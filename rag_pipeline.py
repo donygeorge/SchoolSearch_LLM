@@ -2,7 +2,7 @@ import os
 import json
 from langsmith import traceable
 from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage
-from llama_index.core.retrievers import VectorIndexRetriever
+from llama_index.core.retrievers import VectorIndexRetriever, BaseRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine, TransformQueryEngine
 from datetime import datetime, timedelta
 
@@ -60,8 +60,22 @@ def load_index():
     
     return index
 
+class SchoolAwareRetriever(BaseRetriever):
+    def __init__(self, base_retriever, school_name):
+        self.base_retriever = base_retriever
+        self.school_name = school_name.lower()
 
-def get_query_engine():
+    def _retrieve(self, query, **kwargs):
+        nodes = self.base_retriever.retrieve(query, **kwargs)
+        
+        # Prioritize nodes related to the specific school
+        school_nodes = [node for node in nodes if node.metadata.get('school', '').lower() == self.school_name]
+        other_nodes = [node for node in nodes if node.metadata.get('school', '').lower() != self.school_name]
+        
+        # Combine the lists, putting school-specific nodes first
+        return school_nodes + other_nodes
+
+def get_query_engine(school_name = None):
     if not os.path.exists("persisted_data/docstore.json"):
         print("Creating new index...")
         index = create_index()
@@ -69,10 +83,16 @@ def get_query_engine():
         print("Loading existing index...")
         index = load_index()
 
-    retriever = VectorIndexRetriever(
+    base_retriever = VectorIndexRetriever(
         index=index,
         similarity_top_k=10,
     )
+    if school_name:
+        retriever = SchoolAwareRetriever(base_retriever, school_name)
+        print(f"Using school-aware retriever for {school_name}")
+    else:
+        retriever = base_retriever
+        
     query_engine = RetrieverQueryEngine.from_args(
         retriever=retriever,
         node_postprocessors=[],
@@ -124,23 +144,28 @@ def format_response_with_sources(answer, sources):
     return formatted_response
 
 if __name__ == "__main__":
-    query_engine = get_query_engine()
     
     # Test query
     queries = [
-               "What are the fees for the Harker School?",
-            #    "What are the key admissions requirements for Harker School?",
-            #    "Who is the admission  in charge for the Harker School?",
-            #    "What is the average class size for Harker School?", 
-            #    "What are the key admission dates for Harker School?",
-            #    "How large is the class room for Harker School?",
-            #    "What is the address of the kindergarden for Harker School?",
-            #    "What are the fees for the Keys School?",
-            #    "What is the average class size for the Keys School?",
-            #    "What is the address of the kindergarden for the Keys School?",
-            #    "What is the address of the kindergarden for Helios School?"
-            ];
-    for query in queries:
+        {"school": "harker", "query": "What are the fees for the Harker School?"},
+        {"school": "helios", "query": "What are the fees for the Helios School?"},
+        {"school": "keys", "query": "What are the fees for the Keys School?"},
+        # {"school": "harker", "query": "What are the key admissions requirements for Harker School?"},
+        # {"school": "harker", "query": "Who is the admission in charge for the Harker School?"},
+        # {"school": "harker", "query": "What is the average class size for Harker School?"},
+        # {"school": "harker", "query": "What are the key admission dates for Harker School?"},
+        # {"school": "harker", "query": "How large is the class room for Harker School?"},
+        # {"school": "harker", "query": "What is the address of the kindergarden for Harker School?"},
+        # {"school": "keys", "query": "What are the fees for the Keys School?"},
+        # {"school": "keys", "query": "What is the average class size for the Keys School?"},
+        # {"school": "keys", "query": "What is the address of the kindergarden for the Keys School?"},
+        # {"school": "helios", "query": "What is the address of the kindergarden for Helios School?"}
+    ]
+    
+    for query_item in queries:
+        query = query_item["query"]
+        school = query_item["school"]
+        query_engine = get_query_engine(school)
         response = query_engine.query(query)
         
         # The main response text
