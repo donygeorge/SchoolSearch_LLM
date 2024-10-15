@@ -184,6 +184,32 @@ def on_chat_start():
     system_prompt = BASE_SYSTEM_PROMPT.format(config_area=config_area, current_date=current_date, user_information=memories)
     message_history = [{"role": "system", "content": system_prompt}]
     cl.user_session.set("message_history", message_history)
+    
+    
+@cl.set_starters
+async def set_starters():
+    return [
+        cl.Starter(
+            label="Key dates and events",
+            message="What the key admission deadlines and events for Harker school?",
+            icon="/public/calendar.svg",
+            ),
+        cl.Starter(
+            label="School values and ideologies",
+            message="Tell me about the core values and ideologies of Harker school?",
+            icon="/public/ideas.svg",
+            ),
+        cl.Starter(
+            label="School costs",
+            message="What is the annual cost of sending my kid to Harker school in kindergarden?",
+            icon="/public/cost.svg",
+            ),
+        cl.Starter(
+            label="Commute time to school",
+            message="How long will it take me to commute to Harker school from my house in the morning?",
+            icon="/public/time.svg",
+            )
+        ]
 
 @traceable
 @cl.on_message

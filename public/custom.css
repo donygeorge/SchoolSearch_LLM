@@ -9,9 +9,11 @@
     z-index: 9999;
   } */
 
-.logo {
-    height: 100px !important;  /* Adjust this value as needed */
+  img[alt="logo"] {
+    height: 50px !important;  /* Adjust this value as needed */
     width: auto !important;
+    margin-left: 8px;
+    max-height: none !important;  /* Override the max-height */
 }
 
 /* System message styling */

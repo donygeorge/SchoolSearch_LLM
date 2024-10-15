@@ -54,10 +54,10 @@ enabled = false
 
 [UI]
 # Name of the assistant.
-name = "Bay Area School Assistant"
+name = "School Researcher"
 
 # Description of the assistant. This is used for HTML tags.
-# description = "Helps with answering questions about Bay Area Schools, especially around admissions for private schools."
+# description = "Helps with answering questions about Schools, especially around admissions for private schools."
 
 # Large size content are by default collapsed for a cleaner ui
 default_collapse_content = true
