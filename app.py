@@ -1,6 +1,7 @@
 import chainlit as cl
 import openai
 import json
+import re
 from datetime import datetime
 from langsmith import traceable
 from langsmith.wrappers import wrap_openai
@@ -10,7 +11,7 @@ from config.config_llm import config, model_kwargs
 from prompts import BASE_SYSTEM_PROMPT, RAG_SYSTEM_PROMPT, LLM_FUNCTIONS, USER_MEMORY_CHECK_PROMPT
 from config.config_app import config_area
 
-from rag_pipeline import get_query_engine, get_schools_with_data
+from rag_pipeline import get_query_engine, get_schools_with_data, get_sources
 from map_functions import get_travel_time, get_travel_time_based_on_arrival_time, get_travel_time_based_on_departure_time
 
 from helpers.memory_helper import get_formatted_memories, save_memories
@@ -34,9 +35,13 @@ async def query_rag(client, message_history, message):
 
     rag_response = query_engine.query(rag_query)
     rag_context = str(rag_response)
+    
+    # Extract sources from the response
+    sources = get_sources(rag_response.source_nodes)
+    
     print("RAG reply: " + rag_context)
     
-    return rag_context
+    return rag_context, sources
 
 
 @traceable
@@ -70,8 +75,20 @@ async def check_rag(client, message_history, message):
             for rag_message in rag_messages:
                 temporary_message_history = message_history.copy()
                 temporary_message_history.append({"role": "system", "Updated question to query:": rag_message})
-                rag_reply = await query_rag(client, temporary_message_history, rag_message)
-                updated_message_history.append({"role": "assistant", "content": f"Context: {rag_reply}\n\nQuestion: {rag_message}"})
+                rag_reply, rag_sources = await query_rag(client, temporary_message_history, rag_message)
+                
+                # Format the sources information
+                sources_info = "\n".join([
+                    f"Source {i+1}: {source['metadata'].get('source', 'Unknown')} "
+                    f"Type: {source['metadata'].get('type', 'Unknown')}, "
+                    f"Relevance: {source['score']:.2f})"
+                    for i, source in enumerate(rag_sources)
+                ])
+                
+                updated_message_history.append({
+                    "role": "assistant", 
+                    "content": f"COntext:\n{rag_reply}\n\nQuestion:\n{rag_message}\n\nSources:\n{sources_info}"
+                })
                 used_rag = True
     except json.JSONDecodeError:
         pass
@@ -174,15 +191,16 @@ async def generate_response(client, message_history):
     await response_message.update()
     return response_message, full_response, message_history, is_tool_call, tool_calls
 
-    
-
 
 @traceable
 @cl.on_chat_start
 def on_chat_start():    
     current_date = datetime.now().strftime("%Y-%m-%d")
-    memories = get_formatted_memories()
-    system_prompt = BASE_SYSTEM_PROMPT.format(config_area=config_area, current_date=current_date, user_information=memories)
+    system_prompt = BASE_SYSTEM_PROMPT.format(
+        config_area=config_area,
+        current_date=current_date,
+        user_information=get_formatted_memories(),
+        schools_with_data=get_schools_with_data())
     message_history = [{"role": "system", "content": system_prompt}]
     cl.user_session.set("message_history", message_history)
     

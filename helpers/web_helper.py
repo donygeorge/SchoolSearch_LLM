@@ -43,6 +43,7 @@ def clean_and_preprocess_website_text(html_content):
     
     return text
 
+
 def clean_and_preprocess_website(website_document):
     cleaned_text = clean_and_preprocess_website_text(website_document.text)
     return Document(text=cleaned_text, metadata=website_document.metadata)
@@ -63,32 +64,7 @@ def load_document_from_url(loader, url):
         return None
 
 
-def get_school_links(school_links):
-    links = []
-    
-    for school in school_links:
-        for key, data in school.items():
-            # print("key: " + key)
-            if key not in ['name', 'additional_links', 'root']:
-                links.append(data)
-            elif key == 'additional_links':
-                for link in data:
-                    links.append(link)
-    return links
-
-def get_school_root_links(school_links):
-    links = []
-    
-    for school in school_links:
-        for key, data in school.items():
-            # print("key: " + key)
-            if key == 'root':
-                links.append(data)
-
-    return links
-
-
-def load_link(link, loader, cache):
+def load_link(link, loader, cache, school_name=None):
     doc = None
     if link in cache['websites'] and is_cache_valid(cache['websites'][link]['timestamp']):
         print(f"Using cached data for website: {link}")
@@ -99,6 +75,19 @@ def load_link(link, loader, cache):
         doc = load_document_from_url(loader, link)
         # print("doc: " + str(doc))
         doc = clean_and_preprocess_website(doc)
+        
+        if doc.metadata is None:
+            doc.metadata = {}
+        
+        # Update metadata
+        doc.metadata.update({
+            "source": link,
+            "type": "website"
+        })
+
+        if school_name:
+            doc.metadata['school'] = school_name.lower()
+
         cache['websites'][link] = {
             'content': doc.text,
             'timestamp': datetime.now().isoformat(),
@@ -108,17 +97,35 @@ def load_link(link, loader, cache):
     return doc, cache
         
 
-def load_school_links(links):
+def load_school_links(links, school_name = None):
     web_docs = []
     loader = SimpleWebPageReader()
     cache = load_cache()
         
     for link in links:
-        doc, cache = load_link(link, loader, cache)
+        doc, cache = load_link(link, loader, cache, school_name)
         web_docs.append(doc)
     
     save_cache(cache)
     return web_docs
+
+
+def load_non_root_links(school_links):
+    docs = []
+    for school in school_links:
+        school_name = school['name']
+        links = []
+        for key, data in school.items():
+            # print("key: " + key)
+            if key not in ['name', 'additional_links', 'root']:
+                links.append(data)
+            elif key == 'additional_links':
+                for link in data:
+                    links.append(link)
+        returned_docs = load_school_links(links, school_name)
+        docs.extend(returned_docs)
+    return docs
+
 
 def crawl_links(root_link, max_pages = 100):
     links = []
@@ -180,14 +187,16 @@ def crawl_links(root_link, max_pages = 100):
 def load_crawled_links(school_links):
     crawled_docs = []
     
-    # root links
-    root_links = get_school_root_links(school_links)
-    for link in root_links:
-        links = crawl_links(link)
-        print(f"For root link: {link}, found {len(links)}")
-        
-        school_docs = load_school_links(links)
-        crawled_docs.extend(school_docs)
+    for school in school_links:
+        school_name = school['name']
+        if 'root' in school:
+            root_link = school['root']
+            links = crawl_links(root_link)
+            print(f"For root link: {root_link}, found {len(links)}")
+            school_docs = load_school_links(links, school_name)
+            crawled_docs.extend(school_docs)
+        else:
+            print(f"No root link found for {school_name}")
 
     return crawled_docs
 
