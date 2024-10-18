@@ -217,8 +217,8 @@ async def set_starters():
             icon="/public/calendar.svg",
             ),
         cl.Starter(
-            label="School values and ideologies",
-            message="Tell me about the core values and ideologies of Harker school?",
+            label="Research school values and ideologies",
+            message="Tell me about the core values and ideologies about the Keys school?",
             icon="/public/ideas.svg",
             ),
         cl.Starter(
@@ -228,7 +228,7 @@ async def set_starters():
             ),
         cl.Starter(
             label="Commute time to school",
-            message="How long will it take me to commute to Harker school from my house in the morning?",
+            message="How long will it take me to commute to Keys school, Pinewood school and Khan Labs school from my house in the morning?",
             icon="/public/time.svg",
             )
         ]
